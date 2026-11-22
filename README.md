@@ -2,7 +2,7 @@
 
 A study agent for Chloe Nguyen, a nursing student and varsity swimmer. It turns her own course notes into 5-question study sets and sends them on Telegram during gaps in her calendar: team bus rides and the waits between races at meets. It never sends during practice, warm-ups, races, shifts, lectures or sleep.
 
-It costs $0. It uses OpenRouter's free models, a Telegram bot, Python and SQLite.
+It costs $0. It uses NVIDIA's free model API (build.nvidia.com), a Telegram bot, Python and SQLite.
 
 ## How it works
 
@@ -18,12 +18,14 @@ chloe.ics -> gaps.py     -> send times (bus rides + meet days, minus blocked eve
 
 AI only runs in `generate.py`. A 10-page notes file takes about 10 requests, and every reply is cached in `data/cache/`, so re-runs are free. Answering questions makes no AI calls.
 
-| Job | Model (free) | Backup |
-|---|---|---|
-| Write questions | `nvidia/nemotron-3-ultra-550b-a55b:free` | `google/gemma-4-31b-it:free` |
-| Fact-check questions | `google/gemma-4-31b-it:free` | `google/gemma-4-26b-a4b-it:free` |
+| Job | Model (NVIDIA free endpoint) | Backup | Why |
+|---|---|---|---|
+| Write questions | `nvidia/nemotron-3-ultra-550b-a55b` | `nvidia/nemotron-3.5-super-vl-120b-a12b` | Largest free reasoning model; the backup is fast and can also read images (for handwriting later) |
+| Fact-check questions | `mistralai/mistral-large-4-1t-a52b` | `moonshotai/kimi-k3.1-pro` | From different companies than the writer, so they're less likely to share its mistakes. Both correctly rejected a false answer in testing. |
 
-Models and all calendar rules are set in `config.toml`. Free models on OpenRouter change often, so check https://openrouter.ai/models?q=free if one stops working.
+`google/gemma-4-31b-it` was also tested as a checker but timed out on NVIDIA's endpoint.
+
+Models and all calendar rules are set in `config.toml`. To see every model your key can use: `curl -H "Authorization: Bearer $NVIDIA_API_KEY" https://integrate.api.nvidia.com/v1/models`.
 
 ## Setup
 
@@ -33,7 +35,7 @@ python -m venv .venv
 cp .env.example .env                              # then fill in the keys below
 ```
 
-- `OPENROUTER_API_KEY`: from https://openrouter.ai/keys
+- `NVIDIA_API_KEY`: sign in at https://build.nvidia.com, open any model and click "Get API Key" (free for prototyping)
 - `TELEGRAM_BOT_TOKEN`: message @BotFather on Telegram, send `/newbot`
 - `TELEGRAM_CHAT_ID`: start the bot, send `/start`, and copy the number it replies with
 
@@ -41,7 +43,7 @@ cp .env.example .env                              # then fill in the keys below
 
 ```bash
 python ingest.py data/notes.pdf     # store the notes, page by page
-python generate.py                  # build and check the question bank (uses OpenRouter)
+python generate.py                  # build and check the question bank (uses the NVIDIA API)
 python gaps.py                      # print the send times found in data/chloe.ics
 python replay.py                    # replay Oct 23-26 in the terminal (add --auto to simulate answers)
 python bot.py                       # Telegram bot; send /replay to play the weekend in ~3 minutes
@@ -56,7 +58,7 @@ Telegram commands: `/now` sends a set right away, `/weak` lists weak spots, and 
 | 1. Sets land in gaps | `python replay.py --auto`, then `python eval.py sends` (separate audit of every send time) |
 | 2. At least 95% of questions grounded | `python eval.py review`, mark each row y/n in `eval/out/review_sheet.csv`, then `python eval.py score` |
 | 3. The repeat loop works | `python eval.py sends` (missed questions that came back later) |
-| 4. $0 spent | screenshot of https://openrouter.ai/activity |
+| 4. $0 spent | all models are free build.nvidia.com endpoints; no payment method is attached to the key |
 
 Run the tests (no keys or network needed): `python -m pytest -q`
 

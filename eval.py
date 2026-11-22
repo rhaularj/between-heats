@@ -4,7 +4,7 @@
   python eval.py review   # check 2: export 20 random checked questions for a manual review
   python eval.py score    # check 2: score the filled-in review sheet (target: at least 95% grounded)
 
-Check 4 ($0 spent) is a screenshot of https://openrouter.ai/activity.
+Check 4 ($0 spent): every model used is a free build.nvidia.com endpoint.
 """
 import csv
 import json
