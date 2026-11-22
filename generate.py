@@ -10,6 +10,8 @@ Usage: python generate.py
 import json
 import random
 import re
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from rapidfuzz import fuzz
@@ -123,50 +125,66 @@ def shuffle_options(d: Draft) -> tuple[list[str], int]:
     return [d.options[i] for i in order], order.index(d.answer_index)
 
 
-def generate(conn, cfg: dict, chat=llm.chat) -> dict:
+def process_chunk(chunk, cfg: dict, chat) -> list[tuple[Draft, str, str | None]]:
+    """Draft and check the questions for one group of pages. Runs in a worker thread (no DB access)."""
     g, models = cfg["generate"], cfg["models"]
+    by_page = {p["page"]: p for p in chunk}
+    label = f"Pages {chunk[0]['page']}-{chunk[-1]['page']}"
+    started = time.monotonic()
+    drafts = draft_questions(chunk, g["questions_per_page"] * len(chunk), models["writer"], chat)
+
+    results, to_check = [], []
+    for d in drafts:
+        page = by_page.get(d.page)
+        if page is None:
+            results.append((d, "rejected", f"cites page {d.page}, which was not given"))
+        elif not quote_on_page(d.quote, page["text"], g["quote_min_score"]):
+            results.append((d, "rejected", "quote not found on cited page"))
+        else:
+            to_check.append(d)
+
+    verdicts = check_questions(chunk, to_check, models["checker"], chat) if to_check else {}
+    for i, d in enumerate(to_check):
+        ok, reason = verdicts.get(i, (False, "checker gave no verdict"))
+        results.append((d, "passed" if ok else "rejected", None if ok else f"checker: {reason}"))
+    print(f"{label}: {len(drafts)} drafted, {sum(r[1] == 'passed' for r in results)} passed "
+          f"({time.monotonic() - started:.0f}s)")
+    return results
+
+
+def generate(conn, cfg: dict, chat=llm.chat) -> dict:
     pages = [dict(r) for r in conn.execute("SELECT file, page, text FROM pages ORDER BY file, page")]
     if not pages:
         raise SystemExit("No pages stored. Run: python ingest.py data/notes.pdf")
 
+    step = cfg["generate"]["pages_per_call"]
+    chunks = [pages[i:i + step] for i in range(0, len(pages), step)]
+    workers = cfg["generate"].get("parallel", {}).get("workers", 1)
+    print(f"Building questions from {len(pages)} pages in {len(chunks)} groups, {workers} at a time...")
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        all_results = list(pool.map(lambda c: process_chunk(c, cfg, chat), chunks))
+
     conn.execute("DELETE FROM answers")
     conn.execute("DELETE FROM questions")
     stats = {"drafted": 0, "failed_quote": 0, "failed_checker": 0, "passed": 0}
-    step = g["pages_per_call"]
-    for start in range(0, len(pages), step):
-        chunk = pages[start:start + step]
-        by_page = {p["page"]: p for p in chunk}
-        print(f"Pages {chunk[0]['page']}-{chunk[-1]['page']}: drafting...")
-        drafts = draft_questions(chunk, g["questions_per_page"] * len(chunk), models["writer"], chat)
-        stats["drafted"] += len(drafts)
-
-        results = []  # (draft, status, reason)
-        to_check = []
-        for d in drafts:
-            page = by_page.get(d.page)
-            if page is None:
-                results.append((d, "rejected", f"cites page {d.page}, which was not given"))
-            elif not quote_on_page(d.quote, page["text"], g["quote_min_score"]):
-                results.append((d, "rejected", "quote not found on cited page"))
-            else:
-                to_check.append(d)
-        stats["failed_quote"] += len(results)
-
-        verdicts = check_questions(chunk, to_check, models["checker"], chat) if to_check else {}
-        for i, d in enumerate(to_check):
-            ok, reason = verdicts.get(i, (False, "checker gave no verdict"))
-            results.append((d, "passed" if ok else "rejected", None if ok else f"checker: {reason}"))
-            stats["passed" if ok else "failed_checker"] += 1
-
+    for chunk, results in zip(chunks, all_results):
+        files = {p["page"]: p["file"] for p in chunk}
         for d, status, reason in results:
+            stats["drafted"] += 1
+            if status == "passed":
+                stats["passed"] += 1
+            elif reason and reason.startswith("checker"):
+                stats["failed_checker"] += 1
+            else:
+                stats["failed_quote"] += 1
             options, answer = shuffle_options(d)
             conn.execute(
                 "INSERT INTO questions (file, page, topic, question, options, answer_index, explanation,"
                 " quote, status, reject_reason) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                (by_page.get(d.page, chunk[0])["file"], d.page, d.topic, d.question, json.dumps(options),
+                (files.get(d.page, chunk[0]["file"]), d.page, d.topic, d.question, json.dumps(options),
                  answer, d.explanation, d.quote, status, reason),
             )
-        conn.commit()
+    conn.commit()
     return stats
 
 
