@@ -21,9 +21,11 @@ AI only runs in `generate.py`. A 10-page notes file takes about 10 requests, and
 | Job | Model (NVIDIA free endpoint) | Backup | Why |
 |---|---|---|---|
 | Write questions | `nvidia/nemotron-3-ultra-550b-a55b` | `nvidia/nemotron-3.5-super-vl-120b-a12b` | Largest free reasoning model; the backup is fast and can also read images (for handwriting later) |
-| Fact-check questions | `mistralai/mistral-large-4-1t-a52b` | `moonshotai/kimi-k3.1-pro` | From different companies than the writer, so they're less likely to share its mistakes. Both correctly rejected a false answer in testing. |
+| Fact-check questions | `nvidia/nemotron-3.5-lightning-30b-a3b` | `nvidia/nemotron-3.5-super-vl-120b-a12b`, then `moonshotai/kimi-k3.1-pro` | A different, much smaller model than the writer. It answered in 2-7 s and judged true and false answers correctly in testing. |
 
-`google/gemma-4-31b-it` was also tested as a checker but timed out on NVIDIA's endpoint.
+Choosing the checker: models from other companies would be more independent, but on NVIDIA's free tier `mistralai/mistral-large-4-1t-a52b`, `moonshotai/kimi-k3.1-pro`, `google/gemma-4-31b-it`, `z-ai/glm-5.3-flash` and `stepfun-ai/step-5-preview` timed out when several requests ran at once. The quote check (code, no model) is the part that doesn't depend on any model.
+
+The 5 page groups run in parallel. With all models working, building the bank from 10 pages takes about 20 seconds when the writer's replies are cached, and about 2 minutes without the cache.
 
 Models and all calendar rules are set in `config.toml`. To see every model your key can use: `curl -H "Authorization: Bearer $NVIDIA_API_KEY" https://integrate.api.nvidia.com/v1/models`.
 
