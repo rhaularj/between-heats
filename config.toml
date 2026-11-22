@@ -1,0 +1,27 @@
+# Between Heats settings. All tunable rules live here.
+
+[models]
+# OpenRouter free models. The list order is the fallback order.
+writer  = ["nvidia/nemotron-3-ultra-550b-a55b:free", "google/gemma-4-31b-it:free"]
+checker = ["google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free"]
+
+[generate]
+pages_per_call = 2
+questions_per_page = 3
+quote_min_score = 85          # rapidfuzz partial_ratio, 0-100
+
+[gaps]
+timezone = "America/Halifax"
+gap_keywords = ["bus"]                                 # timed events that ARE study gaps
+meet_keywords = ["invitational", "classic", "meet"]    # all-day events that make a meet day
+meet_day_start = "06:00"
+sleep_start = "23:00"
+sleep_end = "04:50"
+min_gap_minutes = 15
+max_sets_per_day = 6
+set_minutes = 5
+
+[study]
+set_size = 5
+boxes = 3
+weak_list_hour = 20           # 8 PM the night before the quiz
