@@ -68,7 +68,7 @@ def main() -> None:
                 print(study.weak_spots_text(conn))
                 log.writerow([now.isoformat(), kind, label, "", ""])
                 continue
-            qs = study.pick_set(conn, cfg["study"]["set_size"], now)
+            qs = study.pick_set(conn, cfg["study"]["set_size"], now, cfg["study"]["max_repeats_per_set"])
             right = 0
             for q in qs:
                 correct, _ = study.record_answer(conn, q.id, ask(q, args.auto, rng), now, cfg["study"]["boxes"])

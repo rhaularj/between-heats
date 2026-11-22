@@ -29,19 +29,30 @@ def _to_question(row) -> Question:
                     row["answer_index"], row["explanation"])
 
 
-def pick_set(conn, size: int, now: datetime) -> list[Question]:
+def pick_set(conn, size: int, now: datetime, max_repeats: int = 2) -> list[Question]:
+    """Up to `max_repeats` missed questions, then new ones, then the rest.
+
+    Capping repeats keeps a bad set from turning every later set into the same questions.
+    """
     recent = (now - RECENT).isoformat()
-    rows = conn.execute(
-        """SELECT * FROM questions WHERE status = 'passed'
-           ORDER BY
-             CASE WHEN last_asked IS NOT NULL AND last_asked > ? THEN 1 ELSE 0 END,
-             CASE WHEN box = 1 AND last_asked IS NOT NULL THEN 0
-                  WHEN last_asked IS NULL THEN 1 ELSE 2 END,
-             box, last_asked, id
-           LIMIT ?""",
-        (recent, size),
+    repeats = conn.execute(
+        """SELECT * FROM questions WHERE status = 'passed' AND box = 1
+             AND last_asked IS NOT NULL AND last_asked <= ?
+           ORDER BY last_asked, id LIMIT ?""",
+        (recent, max_repeats),
     ).fetchall()
-    return [_to_question(r) for r in rows]
+    taken = [r["id"] for r in repeats]
+    exclude = f"AND id NOT IN ({','.join('?' * len(taken))})" if taken else ""
+    rest = conn.execute(
+        f"""SELECT * FROM questions WHERE status = 'passed' {exclude}
+            ORDER BY
+              CASE WHEN last_asked IS NOT NULL AND last_asked > ? THEN 1 ELSE 0 END,
+              CASE WHEN last_asked IS NULL THEN 0 ELSE 1 END,
+              box, last_asked, id
+            LIMIT ?""",
+        (*taken, recent, size - len(repeats)),
+    ).fetchall()
+    return [_to_question(r) for r in [*repeats, *rest]]
 
 
 def record_answer(conn, question_id: int, choice: int, now: datetime, boxes: int = 3) -> tuple[bool, Question]:

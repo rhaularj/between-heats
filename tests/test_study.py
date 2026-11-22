@@ -43,6 +43,20 @@ def test_wrong_answer_comes_back_in_the_next_set_not_right_away():
     assert study.pick_set(conn, 5, T0 + timedelta(hours=2))[0].id == missed
 
 
+def test_a_bad_set_does_not_take_over_the_next_one():
+    conn = bank()
+    first = study.pick_set(conn, 5, T0)
+    answer_set(conn, first, T0, wrong_ids={q.id for q in first})  # all 5 wrong
+
+    second = study.pick_set(conn, 5, T0 + timedelta(hours=2))
+    repeated = {q.id for q in second} & {q.id for q in first}
+    assert len(second) == 5 and len(repeated) == 2  # 2 repeats, 3 new
+    # The other 3 missed questions come back in the set after that.
+    answer_set(conn, second, T0 + timedelta(hours=2))
+    third = study.pick_set(conn, 5, T0 + timedelta(hours=4))
+    assert len({q.id for q in third} & ({q.id for q in first} - repeated)) == 2
+
+
 def test_new_questions_before_mastered_ones():
     conn = bank()
     first = study.pick_set(conn, 5, T0)
