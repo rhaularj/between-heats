@@ -1,9 +1,17 @@
 # Between Heats settings. All tunable rules live here.
 
+[llm]
+# NVIDIA's free API (build.nvidia.com). OpenAI-compatible.
+base_url = "https://integrate.api.nvidia.com/v1"
+api_key_env = "NVIDIA_API_KEY"
+max_tokens = 8192             # room for reasoning + a page pair's worth of questions
+timeout_seconds = 180
+
 [models]
-# OpenRouter free models. The list order is the fallback order.
-writer  = ["nvidia/nemotron-3-ultra-550b-a55b:free", "google/gemma-4-31b-it:free"]
-checker = ["google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free"]
+# The list order is the fallback order. The checker comes from a different company
+# than the writer, so it is less likely to share the writer's mistakes.
+writer  = ["nvidia/nemotron-3-ultra-550b-a55b", "nvidia/nemotron-3.5-super-vl-120b-a12b"]
+checker = ["mistralai/mistral-large-4-1t-a52b", "moonshotai/kimi-k3.1-pro"]
 
 [generate]
 pages_per_call = 2

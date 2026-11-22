@@ -1,7 +1,8 @@
-"""Small OpenRouter client: model fallback list, disk cache and retries.
+"""Small client for NVIDIA's free API (build.nvidia.com): model fallback, disk cache and retries.
 
-Every response is cached on disk by request content, so re-running the
-pipeline never spends free-tier requests twice.
+The API is OpenAI-compatible. Models are tried in the order given; if one is busy
+or times out, the next one is used. Every reply is cached on disk by request
+content, so re-running the pipeline never spends requests twice.
 """
 import hashlib
 import json
@@ -15,9 +16,8 @@ from dotenv import load_dotenv
 
 import db
 
-URL = "https://openrouter.ai/api/v1/chat/completions"
 CACHE_DIR = db.ROOT / "data" / "cache"
-MAX_TRIES = 4
+TRIES_PER_MODEL = 2
 
 
 class LLMError(RuntimeError):
@@ -25,49 +25,55 @@ class LLMError(RuntimeError):
 
 
 def chat(models: list[str], prompt: str, system: str | None = None,
-         cache_dir: Path = CACHE_DIR) -> str:
-    """Send one prompt. OpenRouter tries `models` in order if one is busy."""
+         cache_dir: Path = CACHE_DIR, cfg: dict | None = None) -> str:
+    """Send one prompt and return the reply text, trying `models` in order."""
+    settings = (cfg or db.load_config())["llm"]
     messages = ([{"role": "system", "content": system}] if system else []) + [
         {"role": "user", "content": prompt}
     ]
-    body = {"models": models, "messages": messages, "temperature": 0.3}
-
-    key = hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
+    key = hashlib.sha256(json.dumps({"models": models, "messages": messages}, sort_keys=True).encode()).hexdigest()
     cached = cache_dir / f"{key}.json"
     if cached.exists():
         return json.loads(cached.read_text(encoding="utf-8"))["content"]
 
     load_dotenv(db.ROOT / ".env")
-    api_key = os.environ.get("OPENROUTER_API_KEY")
+    api_key = os.environ.get(settings["api_key_env"])
     if not api_key:
-        raise LLMError("OPENROUTER_API_KEY is not set. Copy .env.example to .env and add your key.")
+        raise LLMError(f"{settings['api_key_env']} is not set. Copy .env.example to .env and add your key.")
 
-    headers = {"Authorization": f"Bearer {api_key}", "X-Title": "Between Heats"}
-    for attempt in range(MAX_TRIES):
-        retry_after = None
-        try:
-            resp = requests.post(URL, headers=headers, json=body, timeout=180)
-        except requests.RequestException as exc:
-            error = f"network error: {exc}"
-        else:
-            data = resp.json() if resp.content else {}
-            if resp.ok and "error" not in data:
-                content = (data["choices"][0]["message"].get("content") or "").strip()
-                if not content:
-                    raise LLMError(f"Empty reply from {data.get('model')}")
-                cache_dir.mkdir(parents=True, exist_ok=True)
-                cached.write_text(json.dumps({"model": data.get("model"), "content": content}),
-                                  encoding="utf-8")
-                return content
-            error = f"HTTP {resp.status_code}: {data.get('error', resp.text[:200])}"
-            if resp.status_code not in (408, 429) and resp.status_code < 500:
-                raise LLMError(error)  # bad request or bad key: retrying won't help
-            retry_after = resp.headers.get("Retry-After")
-        if attempt < MAX_TRIES - 1:
-            delay = float(retry_after) if retry_after else 5 * 2 ** attempt
-            print(f"  OpenRouter busy ({error}); retrying in {delay:.0f}s")
-            time.sleep(delay)
-    raise LLMError(f"Gave up after {MAX_TRIES} tries: {error}")
+    url = settings["base_url"].rstrip("/") + "/chat/completions"
+    headers = {"Authorization": f"Bearer {api_key}", "Accept": "application/json"}
+    errors = []
+    for model in models:
+        body = {"model": model, "messages": messages, "temperature": 0.3, "max_tokens": settings["max_tokens"]}
+        for attempt in range(TRIES_PER_MODEL):
+            retry_after = None
+            try:
+                resp = requests.post(url, headers=headers, json=body, timeout=settings["timeout_seconds"])
+            except requests.RequestException as exc:
+                error = f"{model}: {type(exc).__name__}"
+            else:
+                if resp.ok:
+                    content = (resp.json()["choices"][0]["message"].get("content") or "").strip()
+                    if content:
+                        cache_dir.mkdir(parents=True, exist_ok=True)
+                        cached.write_text(json.dumps({"model": model, "content": content}), encoding="utf-8")
+                        return content
+                    error = f"{model}: empty reply"
+                else:
+                    error = f"{model}: HTTP {resp.status_code} {resp.text[:200]}"
+                    if resp.status_code in (401, 403):
+                        raise LLMError(error)  # bad key: other models won't help
+                    if resp.status_code not in (408, 429) and resp.status_code < 500:
+                        break  # this model rejects the request; try the next model
+                    retry_after = resp.headers.get("Retry-After")
+            errors.append(error)
+            if attempt < TRIES_PER_MODEL - 1:
+                delay = float(retry_after) if retry_after else 10
+                print(f"  {error}; retrying in {delay:.0f}s")
+                time.sleep(delay)
+        print(f"  Moving on from {model}")
+    raise LLMError("All models failed: " + " | ".join(errors))
 
 
 def parse_json(text: str):

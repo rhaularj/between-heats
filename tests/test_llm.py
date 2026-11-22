@@ -1,44 +1,70 @@
 import json
 
 import pytest
+import requests
 
+import db
 import llm
+
+CFG = db.load_config()
 
 
 class FakeResponse:
     def __init__(self, status, payload, headers=None):
         self.status_code, self._payload, self.headers = status, payload, headers or {}
         self.ok = status < 400
-        self.content = json.dumps(payload).encode()
-        self.text = self.content.decode()
+        self.text = json.dumps(payload)
 
     def json(self):
         return self._payload
 
 
 def ok(content):
-    return FakeResponse(200, {"model": "m", "choices": [{"message": {"content": content}}]})
+    return FakeResponse(200, {"choices": [{"message": {"content": content}}]})
 
 
-def test_retries_rate_limit_then_caches(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENROUTER_API_KEY", "test")
+@pytest.fixture
+def env(monkeypatch):
+    monkeypatch.setenv("NVIDIA_API_KEY", "test")
     monkeypatch.setattr(llm.time, "sleep", lambda s: None)
-    replies = [FakeResponse(429, {"error": "rate"}, {"Retry-After": "1"}), ok("hello")]
+
+
+def fake_post(replies, calls):
+    def post(url, headers, json, timeout):
+        calls.append(json["model"])
+        reply = replies.pop(0)
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
+    return post
+
+
+def test_falls_back_to_next_model_then_caches(tmp_path, monkeypatch, env):
     calls = []
-    monkeypatch.setattr(llm.requests, "post", lambda *a, **k: calls.append(k["json"]) or replies.pop(0))
+    replies = [FakeResponse(503, {"error": "busy"}), requests.Timeout(), ok("hello")]
+    monkeypatch.setattr(llm.requests, "post", fake_post(replies, calls))
 
-    assert llm.chat(["a:free", "b:free"], "hi", cache_dir=tmp_path) == "hello"
-    assert calls[0]["models"] == ["a:free", "b:free"]  # fallback list is sent
-    # Second identical call is served from the cache: no new request.
-    assert llm.chat(["a:free", "b:free"], "hi", cache_dir=tmp_path) == "hello"
-    assert len(calls) == 2
+    assert llm.chat(["a", "b"], "hi", cache_dir=tmp_path, cfg=CFG) == "hello"
+    assert calls == ["a", "a", "b"]  # two tries on a, then b
+    # Same request again is served from the cache: no new call.
+    assert llm.chat(["a", "b"], "hi", cache_dir=tmp_path, cfg=CFG) == "hello"
+    assert len(calls) == 3
 
 
-def test_bad_key_fails_fast(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENROUTER_API_KEY", "test")
-    monkeypatch.setattr(llm.requests, "post", lambda *a, **k: FakeResponse(401, {"error": "bad key"}))
+def test_retry_after_429(tmp_path, monkeypatch, env):
+    calls = []
+    replies = [FakeResponse(429, {"error": "rate"}, {"Retry-After": "2"}), ok("done")]
+    monkeypatch.setattr(llm.requests, "post", fake_post(replies, calls))
+    assert llm.chat(["a"], "hi", cache_dir=tmp_path, cfg=CFG) == "done"
+    assert calls == ["a", "a"]
+
+
+def test_bad_key_fails_fast(tmp_path, monkeypatch, env):
+    calls = []
+    monkeypatch.setattr(llm.requests, "post", fake_post([FakeResponse(401, {"error": "bad key"})], calls))
     with pytest.raises(llm.LLMError, match="401"):
-        llm.chat(["a:free"], "hi", cache_dir=tmp_path)
+        llm.chat(["a", "b"], "hi", cache_dir=tmp_path, cfg=CFG)
+    assert calls == ["a"]
 
 
 def test_parse_json_strips_code_fences():
