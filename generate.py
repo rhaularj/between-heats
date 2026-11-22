@@ -135,6 +135,12 @@ def process_chunk(chunk, cfg: dict, chat) -> list[tuple[Draft, str, str | None]]
 
     results, to_check = [], []
     for d in drafts:
+        if d.page not in by_page:
+            # Writers sometimes number pages within the group (1, 2) instead of using the real numbers.
+            # Use the given page that actually contains the quote, if there is exactly one.
+            matches = [n for n, p in by_page.items() if quote_on_page(d.quote, p["text"], g["quote_min_score"])]
+            if len(matches) == 1:
+                d.page = matches[0]
         page = by_page.get(d.page)
         if page is None:
             results.append((d, "rejected", f"cites page {d.page}, which was not given"))
@@ -147,9 +153,24 @@ def process_chunk(chunk, cfg: dict, chat) -> list[tuple[Draft, str, str | None]]
     for i, d in enumerate(to_check):
         ok, reason = verdicts.get(i, (False, "checker gave no verdict"))
         results.append((d, "passed" if ok else "rejected", None if ok else f"checker: {reason}"))
+    reasons = {}
+    for _, status, reason in results:
+        if status == "rejected":
+            key = "checker said no" if reason.startswith("checker") else reason
+            reasons[key] = reasons.get(key, 0) + 1
+    detail = "; ".join(f"{n} {r}" for r, n in reasons.items())
     print(f"{label}: {len(drafts)} drafted, {sum(r[1] == 'passed' for r in results)} passed "
-          f"({time.monotonic() - started:.0f}s)")
+          f"({time.monotonic() - started:.0f}s){' | rejected: ' + detail if detail else ''}")
     return results
+
+
+def safe_process(chunk, cfg: dict, chat):
+    """One failing page group shouldn't sink the whole run. Re-running retries only what failed (cache)."""
+    try:
+        return process_chunk(chunk, cfg, chat)
+    except (llm.LLMError, ValueError, KeyError) as exc:
+        print(f"Pages {chunk[0]['page']}-{chunk[-1]['page']}: FAILED ({exc}). Run generate.py again to retry.")
+        return None
 
 
 def generate(conn, cfg: dict, chat=llm.chat) -> dict:
@@ -162,12 +183,15 @@ def generate(conn, cfg: dict, chat=llm.chat) -> dict:
     workers = cfg["generate"].get("parallel", {}).get("workers", 1)
     print(f"Building questions from {len(pages)} pages in {len(chunks)} groups, {workers} at a time...")
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        all_results = list(pool.map(lambda c: process_chunk(c, cfg, chat), chunks))
+        all_results = list(pool.map(lambda c: safe_process(c, cfg, chat), chunks))
 
     conn.execute("DELETE FROM answers")
     conn.execute("DELETE FROM questions")
-    stats = {"drafted": 0, "failed_quote": 0, "failed_checker": 0, "passed": 0}
+    stats = {"drafted": 0, "failed_quote": 0, "failed_checker": 0, "passed": 0,
+             "failed_groups": sum(r is None for r in all_results)}
     for chunk, results in zip(chunks, all_results):
+        if results is None:
+            continue
         files = {p["page"]: p["file"] for p in chunk}
         for d, status, reason in results:
             stats["drafted"] += 1
@@ -192,3 +216,5 @@ if __name__ == "__main__":
     s = generate(db.connect(), db.load_config())
     print(f"\nDrafted {s['drafted']} | failed quote check {s['failed_quote']} | "
           f"failed checker {s['failed_checker']} | passed {s['passed']}")
+    if s["failed_groups"]:
+        print(f"{s['failed_groups']} page group(s) failed. Run generate.py again; finished calls are cached.")

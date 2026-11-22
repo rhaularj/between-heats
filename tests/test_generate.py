@@ -14,14 +14,16 @@ def q(question, quote, page=5, answer=0, topic="Hyperkalemia ECG"):
 
 def fake_chat(models, prompt, system=None):
     if "fact-checker" in (system or ""):
-        # Checker approves question 0, rejects question 1.
+        # Checker approves questions 0 and 2, rejects question 1.
         return json.dumps({"verdicts": [{"index": 0, "supported": True, "reason": "ok"},
-                                        {"index": 1, "supported": False, "reason": "not in notes"}]})
+                                        {"index": 1, "supported": False, "reason": "not in notes"},
+                                        {"index": 2, "supported": True, "reason": "ok"}]})
     return "```json\n" + json.dumps({"questions": [
         q("Which ECG change is seen in hyperkalemia?", "ECG changes include tall, peaked T waves and a widened QRS"),
         q("What else happens to the ECG in hyperkalemia?", "a widened QRS complex"),
         q("Made-up quote question here?", "Potassium is stored mainly in the liver"),
-        q("Question citing a page not given?", "Normal serum potassium is 3.5 to 5.0 mEq/L.", page=9),
+        q("Question citing a page not given?", "This quote is on no page of the given notes at all.", page=9),
+        q("Page numbered within the group?", "Normal serum potassium is 3.5 to 5.0 mEq/L.", page=1),
         {"question": "Broken item"},
     ]}) + "\n```"
 
@@ -40,9 +42,12 @@ def test_quote_match_ignores_line_breaks_and_case():
 def test_two_layer_check_keeps_only_supported_questions():
     conn = setup()
     stats = generate.generate(conn, db.load_config(), chat=fake_chat)
-    assert stats == {"drafted": 4, "failed_quote": 2, "failed_checker": 1, "passed": 1}
+    assert stats == {"drafted": 5, "failed_quote": 2, "failed_checker": 1, "passed": 2, "failed_groups": 0}
     passed = conn.execute("SELECT * FROM questions WHERE status = 'passed'").fetchall()
-    assert [r["question"] for r in passed] == ["Which ECG change is seen in hyperkalemia?"]
+    assert [(r["question"], r["page"]) for r in passed] == [
+        ("Which ECG change is seen in hyperkalemia?", 5),
+        ("Page numbered within the group?", 5),  # page 1 corrected to 5, where the quote is
+    ]
     reasons = {r["reject_reason"] for r in conn.execute("SELECT * FROM questions WHERE status='rejected'")}
     assert reasons == {"quote not found on cited page", "cites page 9, which was not given", "checker: not in notes"}
 

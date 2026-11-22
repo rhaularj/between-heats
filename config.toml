@@ -8,11 +8,13 @@ max_tokens = 8192             # room for reasoning + a page pair's worth of ques
 timeout_seconds = 90          # drop a stuck model sooner and use the backup
 
 [models]
-# The list order is the fallback order. The checker comes from a different company
-# than the writer, so it is less likely to share the writer's mistakes.
+# The list order is the fallback order.
 writer  = ["nvidia/nemotron-3-ultra-550b-a55b", "nvidia/nemotron-3.5-super-vl-120b-a12b"]
-# Kimi answered in ~20 s in testing; Mistral Large timed out, so it is the backup.
-checker = ["moonshotai/kimi-k3.1-pro", "mistralai/mistral-large-4-1t-a52b"]
+# Checker: a different, smaller model than the writer. In testing on NVIDIA's free tier,
+# Lightning answered in 2-7 s and judged true and false answers correctly, while Kimi,
+# Mistral Large, GLM and Step timed out under load. Kimi stays as a last backup.
+checker = ["nvidia/nemotron-3.5-lightning-30b-a3b", "nvidia/nemotron-3.5-super-vl-120b-a12b",
+           "moonshotai/kimi-k3.1-pro"]
 
 [generate.parallel]
 workers = 5                   # page pairs processed at the same time
