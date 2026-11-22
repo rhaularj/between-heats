@@ -41,6 +41,3 @@ boxes = 3
 max_repeats_per_set = 2       # missed questions per set; the rest are new
 quiz_date = "2026-10-26"      # NURS 2100 Quiz 4 opens
 weak_list_hour = 20           # 8 PM the night before the quiz
-
-[replay]
-seconds_per_set = 15          # Telegram /replay: 12 sets + weak list in about 3 minutes

@@ -48,7 +48,7 @@ python ingest.py data/notes.pdf     # store the notes, page by page
 python generate.py                  # build and check the question bank (uses the NVIDIA API)
 python gaps.py                      # print the send times found in data/chloe.ics
 python replay.py                    # replay Oct 23-26 in the terminal (add --auto to simulate answers)
-python bot.py                       # Telegram bot; send /replay to play the weekend in ~3 minutes
+python bot.py                       # Telegram bot; send /replay to play the weekend at your own pace
 ```
 
 Telegram commands: `/now` sends a set right away, `/weak` lists weak spots, and `/replay` plays the weekend on a fake clock.
