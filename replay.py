@@ -8,6 +8,7 @@ Writes every send time to eval/out/replay_log.csv for the evaluation.
 import argparse
 import csv
 import random
+import sys
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -46,6 +47,8 @@ def main() -> None:
     parser.add_argument("--auto", action="store_true", help="simulate answers instead of asking you")
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()
+    # Model text can include characters (e.g. non-breaking hyphens) the Windows console can't show.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     cfg, conn, rng = db.load_config(), db.connect(), random.Random(args.seed)
     if not conn.execute("SELECT 1 FROM questions WHERE status = 'passed' LIMIT 1").fetchone():
