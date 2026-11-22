@@ -1,0 +1,109 @@
+=== Ch. 7 Fluid and Electrolytes: Body Fluid Compartments
+Total body water (TBW) is about 60% of body weight in an average adult. It is lower in older adults and in people with more body fat, because fat tissue holds little water.
+
+Intracellular fluid (ICF) is the fluid inside cells. It holds about two-thirds of total body water.
+
+Extracellular fluid (ECF) is the fluid outside cells and holds about one-third of total body water. ECF has two main parts: interstitial fluid, which surrounds the cells, and intravascular fluid, which is the plasma inside blood vessels.
+
+Osmolality describes the concentration of particles dissolved in a fluid. Normal serum osmolality is about 275 to 295 mOsm/kg. Water moves by osmosis from an area of lower osmolality to an area of higher osmolality.
+
+Sodium is the main cation of the ECF. Potassium is the main cation of the ICF. The sodium-potassium pump keeps these differences in place by moving sodium out of cells and potassium into cells.
+
+Nursing link: daily weight is the most reliable bedside measure of fluid change. A gain of 1 kg reflects about 1 litre of retained fluid.
+
+=== Ch. 7 Fluid Movement and Edema
+Fluid moves between the capillaries and the interstitial space because of two opposing forces, often called Starling forces.
+
+Capillary hydrostatic pressure is the pressure of blood against the capillary wall. It pushes fluid out of the capillary into the interstitial space.
+
+Plasma oncotic pressure (colloid osmotic pressure) is created mainly by albumin. It pulls fluid back into the capillary.
+
+Edema is excess fluid in the interstitial space. The four main mechanisms are:
+1. Increased capillary hydrostatic pressure, for example in heart failure or venous obstruction.
+2. Decreased plasma oncotic pressure, for example low albumin from liver disease, malnutrition or nephrotic syndrome.
+3. Increased capillary permeability, for example in burns, inflammation or allergic reactions.
+4. Lymphatic obstruction, for example after lymph node removal.
+
+Pitting edema leaves a dent after pressure is applied. Nursing link: elevate swollen limbs, protect fragile skin, and monitor intake, output and daily weight.
+
+=== Ch. 7 Regulation of Fluid Balance
+Antidiuretic hormone (ADH) is released from the posterior pituitary gland. It is released when serum osmolality rises or when blood volume falls. ADH makes the collecting ducts of the kidney reabsorb more water, so urine becomes more concentrated.
+
+The renin-angiotensin-aldosterone system (RAAS) responds to low blood pressure or low blood flow to the kidneys. Renin is released by the juxtaglomerular cells of the kidney. Renin leads to the formation of angiotensin II, which causes vasoconstriction and stimulates release of aldosterone.
+
+Aldosterone is released from the adrenal cortex. It makes the kidney reabsorb sodium (and water with it) and excrete potassium.
+
+Atrial natriuretic peptide (ANP) is released by the atria of the heart when they are stretched by high blood volume. ANP increases sodium and water excretion by the kidney, which lowers blood volume.
+
+Thirst is controlled by the hypothalamus and is triggered by rising osmolality. Older adults often have a weaker thirst response and are at higher risk of dehydration.
+
+=== Ch. 7 Sodium Imbalances
+Normal serum sodium is 135 to 145 mEq/L.
+
+Hyponatremia is a serum sodium below 135 mEq/L. Common causes include SIADH (syndrome of inappropriate ADH), thiazide diuretics, excess water intake, and loss of sodium through vomiting or diarrhea. Because water moves into brain cells, the main signs are neurological: headache, confusion, lethargy and, when severe, seizures.
+
+Severe chronic hyponatremia must be corrected slowly. Correcting it too quickly can cause osmotic demyelination syndrome, a serious brain injury.
+
+Hypernatremia is a serum sodium above 145 mEq/L. It is usually caused by water loss greater than sodium loss, for example in diabetes insipidus, fever, or poor water intake. Water moves out of cells, so brain cells shrink. Signs include intense thirst, restlessness, irritability and, when severe, seizures.
+
+Nursing link: monitor neurological status closely in any sodium imbalance, and use seizure precautions when levels are severe.
+
+=== Ch. 7 Potassium Imbalances
+Normal serum potassium is 3.5 to 5.0 mEq/L. Small changes in potassium strongly affect the heart and muscles.
+
+Hypokalemia is a serum potassium below 3.5 mEq/L. Common causes are loop and thiazide diuretics, vomiting, nasogastric suction and diarrhea. Signs include muscle weakness, leg cramps and dysrhythmias. ECG changes include flattened T waves and the appearance of U waves. Hypokalemia increases the risk of digoxin toxicity.
+
+Hyperkalemia is a serum potassium above 5.0 mEq/L. Common causes are kidney failure, potassium-sparing diuretics, large tissue injury, and acidosis, which shifts potassium out of cells. Signs include muscle weakness and dysrhythmias. ECG changes include tall, peaked T waves and a widened QRS complex. Severe hyperkalemia can cause cardiac arrest.
+
+Nursing link: intravenous potassium must always be diluted and given by infusion. It is never given as an IV push.
+
+=== Ch. 7 Calcium and Magnesium Imbalances
+Normal total serum calcium is about 8.5 to 10.5 mg/dL. Calcium levels are controlled mainly by parathyroid hormone, which raises serum calcium.
+
+Hypocalcemia is low serum calcium. Causes include hypoparathyroidism, accidental removal of the parathyroid glands during thyroid surgery, and vitamin D deficiency. Low calcium increases nerve and muscle excitability. Signs include tingling around the mouth, muscle cramps, tetany and a prolonged QT interval.
+
+Two bedside tests for hypocalcemia:
+Chvostek's sign: tapping the facial nerve in front of the ear causes twitching of the face.
+Trousseau's sign: inflating a blood pressure cuff on the upper arm causes a spasm of the hand and wrist (carpal spasm).
+
+Hypercalcemia is high serum calcium. Common causes are hyperparathyroidism and some cancers. Signs include muscle weakness, constipation, kidney stones and a shortened QT interval.
+
+Magnesium: low magnesium often occurs together with low potassium and is common with alcohol use disorder. Like low calcium, it increases neuromuscular irritability.
+
+=== Ch. 8 Acid-Base Balance: Basics
+Normal arterial blood values:
+pH: 7.35 to 7.45
+PaCO2: 35 to 45 mmHg
+HCO3 (bicarbonate): 22 to 26 mEq/L
+
+A pH below 7.35 is acidosis. A pH above 7.45 is alkalosis.
+
+The body uses three lines of defence against changes in pH. Buffers, mainly the bicarbonate buffer system, act within seconds. The lungs change the amount of carbon dioxide (CO2) exhaled within minutes. CO2 acts as an acid in the blood, so faster, deeper breathing removes acid and raises pH. The kidneys act most slowly, over hours to days, by excreting hydrogen ions and reabsorbing or making bicarbonate.
+
+PaCO2 is the respiratory value. HCO3 is the metabolic (kidney) value.
+
+When one system causes the problem, the other system tries to correct the pH. This is called compensation.
+
+=== Ch. 8 Respiratory Acid-Base Disorders
+Respiratory acidosis is caused by hypoventilation, which means CO2 is retained. The PaCO2 rises above 45 mmHg and the pH falls. Common causes include COPD, opioid or sedative overdose, airway obstruction, and weakness of the breathing muscles. The kidneys compensate by retaining bicarbonate.
+
+Respiratory alkalosis is caused by hyperventilation, which means too much CO2 is exhaled. The PaCO2 falls below 35 mmHg and the pH rises. Common causes include anxiety or panic, pain, fever, high altitude, and early salicylate (aspirin) overdose. Signs include light-headedness and tingling of the fingers and around the mouth. The kidneys compensate by excreting bicarbonate.
+
+Nursing link: for respiratory acidosis, support breathing (positioning, coughing and deep breathing, and naloxone if opioids are the cause, as ordered). For anxiety-related respiratory alkalosis, coach the person to slow their breathing.
+
+=== Ch. 8 Metabolic Acid-Base Disorders
+Metabolic acidosis is a low HCO3 (below 22 mEq/L) with a low pH. Causes include diabetic ketoacidosis (DKA), lactic acidosis from shock, kidney failure, and severe diarrhea, which causes a loss of bicarbonate. The lungs compensate with Kussmaul respirations: deep, rapid breathing that blows off CO2.
+
+The anion gap helps find the cause. It is calculated as sodium minus (chloride plus bicarbonate). A normal anion gap is about 8 to 12 mEq/L. The anion gap is high in DKA and lactic acidosis and normal in diarrhea.
+
+Metabolic alkalosis is a high HCO3 (above 26 mEq/L) with a high pH. Causes include vomiting or nasogastric suction (loss of stomach acid), excess antacid use, and some diuretics. The lungs compensate by hypoventilation. Metabolic alkalosis often occurs together with hypokalemia.
+
+=== Ch. 8 Interpreting Arterial Blood Gases (ABGs)
+Step 1: Look at the pH. Below 7.35 is acidosis and above 7.45 is alkalosis.
+Step 2: Look at the PaCO2. If it is abnormal and moves in the opposite direction to the pH, the cause is respiratory.
+Step 3: Look at the HCO3. If it is abnormal and moves in the same direction as the pH, the cause is metabolic.
+Step 4: Check for compensation. If the pH is abnormal and the other value has started to move to correct it, the disorder is partially compensated. If the pH is back within normal range, the disorder is fully compensated. If the other value is still normal, the disorder is uncompensated.
+
+Worked example: pH 7.30, PaCO2 55 mmHg, HCO3 25 mEq/L. The pH is low (acidosis). The PaCO2 is high, moving opposite to the pH, so the cause is respiratory. The HCO3 is normal, so there is no compensation yet. This is uncompensated respiratory acidosis.
+
+Nursing link: always compare ABG results with the patient's breathing pattern, level of consciousness and other lab values.
